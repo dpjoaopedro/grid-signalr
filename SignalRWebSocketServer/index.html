@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>SignalR Client</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <style>
+        #jsonInput,
+        #changeValueInput {
+            width: 400px;
+            height: 200px;
+        }
+
+        .error {
+            color: red;
+            display: none;
+        }
+
+        .operation-value {
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        #clientInfo {
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #e8e8e8;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="clientInfo">
+        <strong>Client ID:</strong> <span id="connectionId">Connecting...</span>
+    </div>
+
+    <div class="control-panel">
+        <h3>Auto Operation Sender</h3>
+        <input type="number" id="intervalInput" value="1000" min="100" placeholder="Interval (ms)">
+        <button id="startAutoSend">Start Auto Send</button>
+        <button id="stopAutoSend" disabled>Stop Auto Send</button>
+    </div>
+
+    <div>
+        <h3>Create Operation</h3>
+        <textarea id="jsonInput" placeholder="Enter operation JSON here">
+{
+    "id": 1,
+    "type": "BUY",
+    "amount": 100,
+    "description": "Sample operation",
+    "value": 50.5
+}
+</textarea>
+        <div id="errorMessage" class="error">Invalid JSON format</div>
+        <button id="sendButton">Send Operation</button>
+    </div>
+
+    <div>
+        <h3>Change Value</h3>
+        <textarea id="changeValueInput" placeholder="Enter change value JSON here">
+{
+    "operationId": "1",
+    "value": "75.5"
+}</textarea>
+        <div id="changeValueError" class="error">Invalid JSON format</div>
+        <button id="changeValueButton">Change Value</button>
+    </div>
+
+    <ul id="operations"></ul>
+
+    <script>
+        let clientId = null;
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:5235/pricer")
+            .build();
+
+        // Helper function to render a single operation
+        function renderOperation(operation) {
+            const li = document.createElement("li");
+            li.id = `operation-${operation.id}`;
+            li.innerHTML = `Operation ${operation.id}: ${operation.type} - Amount: ${operation.amount} - Value: <span class="operation-value">${operation.value}</span> - ${operation.description}`;
+            document.getElementById("operations").appendChild(li);
+        }
+
+        connection.on("ReceiveConnectionId", (connectionId) => {
+            clientId = connectionId;
+            document.getElementById("connectionId").textContent = connectionId;
+        });
+
+        connection.on("ReceiveInitialOperations", (operations) => {
+            document.getElementById("operations").innerHTML = ''; // Clear existing
+            operations.forEach(operation => renderOperation(operation));
+            operationCounter = operations.length + 1; // Update counter for auto-generation
+        });
+
+        connection.on("ReceiveOperation", (operation) => {
+            renderOperation(operation);
+        });
+
+        connection.on("ReceiveChangeOperationValue", (changeOp) => {
+            const operationElement = document.getElementById(`operation-${changeOp.operationId}`);
+            if (operationElement) {
+                const valueSpan = operationElement.querySelector('.operation-value');
+                if (valueSpan) {
+                    valueSpan.textContent = changeOp.value;
+                }
+            }
+        });
+
+        connection.start()
+            .then(() => {
+                console.log("Connected to SignalR hub");
+            })
+            .catch(err => console.error(err));
+
+        document.getElementById("sendButton").addEventListener("click", () => {
+            const jsonInput = document.getElementById("jsonInput").value;
+            const errorMessage = document.getElementById("errorMessage");
+
+            try {
+                const operation = JSON.parse(jsonInput);
+                operation.date = new Date();
+                errorMessage.style.display = "none";
+                connection.invoke("SendOperation", operation).catch(err => console.error(err));
+            } catch (err) {
+                errorMessage.style.display = "block";
+                console.error("Invalid JSON:", err);
+            }
+        });
+
+        document.getElementById("changeValueButton").addEventListener("click", () => {
+            const jsonInput = document.getElementById("changeValueInput").value;
+            const errorMessage = document.getElementById("changeValueError");
+
+            try {
+                const changeValueOperation = JSON.parse(jsonInput);
+                errorMessage.style.display = "none";
+                connection.invoke("ChangeOperationValue", changeValueOperation).catch(err => console.error(err));
+            } catch (err) {
+                errorMessage.style.display = "block";
+                console.error("Invalid JSON:", err);
+            }
+        });
+
+        let autoSendInterval = null;
+        let operationCounter = 1;
+
+        function generateOperation() {
+            return {
+                id: operationCounter++,
+                type: Math.random() > 0.5 ? "BUY" : "SELL",
+                amount: Math.floor(Math.random() * 1000),
+                date: new Date(),
+                description: "Auto generated operation",
+                value: parseFloat((Math.random() * 100).toFixed(2))
+            };
+        }
+
+        document.getElementById("startAutoSend").addEventListener("click", () => {
+            const interval = parseInt(document.getElementById("intervalInput").value);
+            if (interval < 100) return; // Prevent too rapid sending
+
+            document.getElementById("startAutoSend").disabled = true;
+            document.getElementById("stopAutoSend").disabled = false;
+            
+            autoSendInterval = setInterval(() => {
+                const operation = generateOperation();
+                connection.invoke("SendOperation", operation)
+                    .catch(err => console.error(err));
+            }, interval);
+        });
+
+        document.getElementById("stopAutoSend").addEventListener("click", () => {
+            if (autoSendInterval) {
+                clearInterval(autoSendInterval);
+                autoSendInterval = null;
+            }
+            document.getElementById("startAutoSend").disabled = false;
+            document.getElementById("stopAutoSend").disabled = true;
+        });
+    </script>
+</body>
+
+</html>
