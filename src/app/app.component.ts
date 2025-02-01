@@ -120,11 +120,13 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor() {
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl('http://localhost:5235/pricer')
+      .withAutomaticReconnect([0, 2000, 10000, 30000]) // Add retry intervals
       .build();
   }
 
   ngOnInit() {
-    this.setupSignalRConnection();
+    this.startConnection();
+    this.setupSignalRConnection() 
   }
 
   ngOnDestroy() {
@@ -133,6 +135,19 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private setupSignalRConnection() {
+    this.connection.onreconnecting((error) => {
+      console.warn(`Connection lost due to error "${error}". Reconnecting.`);
+    });
+
+    this.connection.onreconnected((connectionId) => {
+      console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
+    });
+
+    this.connection.onclose((error) => {
+      console.error(`Connection closed due to error "${error}". Attempting to reconnect.`);
+      setTimeout(() => this.startConnection(), 5000); // Retry after 5 seconds
+    });
+
     this.connection.on('ReceiveConnectionId', (connectionId: string) => {
       this.clientId = connectionId;
     });
@@ -157,8 +172,13 @@ export class AppComponent implements OnInit, OnDestroy {
         this.applyDeltaUpdate(changeOp);
       }
     );
+  }
 
-    this.connection.start().catch((err) => console.error(err));
+  private startConnection() {
+    this.connection.start().catch((err) => {
+      console.error('Failed to connect with SignalR:', err);
+      setTimeout(() => this.startConnection(), 5000); // Retry after 5 seconds
+    });
   }
 
   onGridReady(params: any) {
