@@ -108,42 +108,32 @@ export class BlotterComponent implements OnInit {
       add: [] as Operation[],
     };
 
+    let operationTransaction!: Operation;
     const existingOperation = this.operationsMap.get(operation.id!);
 
     if (existingOperation) {
-      const updatedData = { ...existingOperation, ...operation };
-      this.operationsMap.set(operation.id!, updatedData);
-      transaction.update.push(updatedData);
-
-      // Check if updated operation is filtered out and notifications are enabled
-      if (
-        this.matchesCurrentFilters(updatedData) &&
-        this.notificationsEnabled()
-      ) {
-        this.notificationDialog.show({
-          id: updatedData.id,
-          value: updatedData.value,
-        });
-      }
+      const operationTransaction = { ...existingOperation, ...operation };
+      this.operationsMap.set(operation.id!, operationTransaction);
+      transaction.update.push(operationTransaction);
     } else {
-      const newOperation = operation as Operation;
-      this.operationsMap.set(operation.id!, newOperation);
-      transaction.add.push(newOperation);
-
-      // Check if new operation is filtered out and notifications are enabled
-      this.gridApi.applyTransactionAsync(transaction);
-
-      if (
-        this.matchesCurrentFilters(newOperation) &&
-        this.notificationsEnabled()
-      ) {
-        this.notificationDialog.show({
-          id: newOperation.id,
-          value: newOperation.value,
-        });
-      }
+      const operationTransaction = operation as Operation;
+      this.operationsMap.set(operation.id!, operationTransaction);
+      transaction.add.push(operationTransaction);
     }
 
+    // Check if updated operation is filtered out and notifications are enabled
+    if (
+      this.matchesCurrentFilters(operationTransaction) &&
+      this.notificationsEnabled()
+    ) {
+      this.notificationDialog.show({
+        id: operationTransaction.id,
+        value: operationTransaction.value,
+      });
+    }
+
+    // Check if new operation is filtered out and notifications are enabled
+    this.gridApi.applyTransactionAsync(transaction);
   }
 
   private matchesCurrentFilters(operation: Operation): boolean {

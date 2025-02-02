@@ -3,7 +3,6 @@
 <div class="grid-container">
   <ag-grid-angular
     [rowData]="operations()"
-    [rowSelection]="'single'"
     [columnDefs]="columnDefs"
     [defaultColDef]="defaultColDef"
     (gridReady)="onGridReady($event)"
@@ -11,7 +10,6 @@
     [getRowStyle]="getRowStyle"
     [rowStyle]="rowStyle"
     [theme]="theme"
-    [asyncTransactionWaitMillis]="500"
     [animateRows]="false"
   >
   </ag-grid-angular>

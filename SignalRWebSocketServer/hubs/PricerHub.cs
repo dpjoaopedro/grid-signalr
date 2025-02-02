@@ -43,7 +43,7 @@ namespace SignalRWebSocketServer.Hubs
         {
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
 
-            var operations = Enumerable.Range(1, 10000)
+            var operations = Enumerable.Range(1, 100000)
                 .Select(id => GenerateRandomOperation(id))
                 .ToList();
 
@@ -58,6 +58,7 @@ namespace SignalRWebSocketServer.Hubs
 
         public async Task ChangeOperationValue(ChangeValueOperation changeValueOperation)
         {
+            Console.WriteLine("ChangeOperationValue");
             await Clients.All.SendAsync("ReceiveChangeOperationValue", changeValueOperation);
         }
 
