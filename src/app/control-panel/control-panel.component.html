@@ -1,0 +1,58 @@
+<div class="control-panel">
+  <h3>Auto Operation Sender</h3>
+  <div class="control-panel__buttons">
+    <input
+      type="number"
+      [(ngModel)]="interval"
+      min="100"
+      placeholder="Interval (ms)"
+    />
+    <button
+      class="custom-button"
+      (click)="startAutoSend()"
+      [disabled]="isAutoSending()"
+    >
+      Start Auto Send
+    </button>
+    <button
+      class="custom-button"
+      (click)="stopAutoSend()"
+      [disabled]="!isAutoSending()"
+    >
+      Stop Auto Send
+    </button>
+  </div>
+
+  <div class="notification-control">
+    <input
+      type="checkbox"
+      id="notificationsToggle"
+      (change)="toggleNotifications($event)"
+    />
+    <label for="notificationsToggle">Enable Notifications</label>
+  </div>
+</div>
+
+<div class="operations-container">
+  <div>
+    <h3>Create Operation</h3>
+    <textarea
+      [(ngModel)]="newOperation"
+      placeholder="Enter operation JSON here"
+    ></textarea>
+    <br />
+    <button class="custom-button" (click)="sendOperation()">
+      Send Operation
+    </button>
+  </div>
+
+  <div>
+    <h3>Change Value</h3>
+    <textarea
+      [(ngModel)]="changeValueOperation"
+      placeholder="Enter change value JSON here"
+    ></textarea>
+    <br />
+    <button class="custom-button" (click)="changeValue()">Change Value</button>
+  </div>
+</div>

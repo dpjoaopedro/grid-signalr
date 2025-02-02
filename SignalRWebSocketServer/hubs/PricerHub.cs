@@ -47,20 +47,23 @@ namespace SignalRWebSocketServer.Hubs
                 .Select(id => GenerateRandomOperation(id))
                 .ToList();
 
-            await Task.Delay(2000);
             await Clients.Caller.SendAsync("ReceiveInitialOperations", operations);
             await base.OnConnectedAsync();
         }
 
         public async Task SendOperation(Operation operation)
         {
-            await Task.Delay(200); 
             await Clients.All.SendAsync("ReceiveOperation", operation);
         }
 
         public async Task ChangeOperationValue(ChangeValueOperation changeValueOperation)
         {
             await Clients.All.SendAsync("ReceiveChangeOperationValue", changeValueOperation);
+        }
+
+        public async Task ToggleNotification(bool enabled)
+        {
+            await Clients.All.SendAsync("NotificationToggled", enabled);
         }
     }
 }
