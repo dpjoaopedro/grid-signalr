@@ -112,14 +112,16 @@ export class BlotterComponent implements OnInit {
     const existingOperation = this.operationsMap.get(operation.id!);
 
     if (existingOperation) {
-      const operationTransaction = { ...existingOperation, ...operation };
+      operationTransaction = { ...existingOperation, ...operation };
       this.operationsMap.set(operation.id!, operationTransaction);
       transaction.update.push(operationTransaction);
     } else {
-      const operationTransaction = operation as Operation;
+      operationTransaction = operation as Operation;
       this.operationsMap.set(operation.id!, operationTransaction);
       transaction.add.push(operationTransaction);
     }
+
+    this.gridApi.applyTransactionAsync(transaction);
 
     // Check if updated operation is filtered out and notifications are enabled
     if (
@@ -133,7 +135,6 @@ export class BlotterComponent implements OnInit {
     }
 
     // Check if new operation is filtered out and notifications are enabled
-    this.gridApi.applyTransactionAsync(transaction);
   }
 
   private matchesCurrentFilters(operation: Operation): boolean {
